@@ -75,22 +75,28 @@ pipeline{
         )
     }
       }
-        stage('Docker Build and Run') {
-          steps {
-            script {
-                    sh '''
-                	echo "Building Docker Image"
-                	docker build -t webapp:latest .
+    stage('Docker Build and Run') {
+    steps {
+        script {
+            sh '''
+                echo "Current Directory:"
+                pwd
+                echo "Listing Files:"
+                ls -l
 
-                	echo "Stopping old container (if any)"
-                	docker rm -f webapp || true
+                echo "Building Docker Image"
+                docker build -t webapp:latest .
 
-                	echo "Running new container"
-                	docker run -d --name webapp -p 9091:8080 webapp:latest
-            		  '''
+                echo "Stopping old container (if any)"
+                docker rm -f webapp || true
+
+                echo "Running new container"
+                docker run -d --name webapp -p 9091:8080 webapp:latest
+            '''
         }
     }
 }
+
          stage('post-build step') {
             steps {
 	    	sh '''
