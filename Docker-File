@@ -10,7 +10,7 @@ RUN mv apache-tomcat-7.0.109/* /opt/tomcat/
 RUN apt -y install java-1.8.0*
 RUN java -version
 WORKDIR /opt/tomcat/webapps
-COPY  COPY target/webapp.war /opt/tomcat/webapps/
+COPY target/webapp.war /opt/tomcat/webapps/
 EXPOSE 9090
 CMD ["/opt/tomcat/bin/catalina.sh", "run"]
 
