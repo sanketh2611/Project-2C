@@ -80,8 +80,7 @@ pipeline{
             script {
                     sh '''
                 	echo "Building Docker Image"
-                	docker build -f Docker-File -t webapp:latest .
-
+                	docker build -t webapp:latest .
 
                 	echo "Stopping old container (if any)"
                 	docker rm -f webapp || true
