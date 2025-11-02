@@ -75,17 +75,26 @@ pipeline{
         )
     }
       }
-        stage ('Tomcat Deployment') {
-           steps {
-             script {
-                 deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://localhost:9090')], contextPath: '/java-application', onFailure: false, war: 'target/webapp.war' 
-                    }
-                  }
-           }
+        stage('Docker Build and Run') {
+          steps {
+            script {
+                    sh '''
+                	echo "Building Docker Image"
+                	docker build -t webapp:latest .
+
+                	echo "Stopping old container (if any)"
+                	docker rm -f webapp || true
+
+                	echo "Running new container"
+                	docker run -d --name webapp -p 9091:8080 webapp:latest
+            		  '''
+        }
+    }
+}
          stage('post-build step') {
             steps {
 	    	sh '''
-                echo "Successfull Pipeline for Tomcat Deployment"
+                echo "Successfull Pipeline for Docker Deployment"
 	     	'''
 	      }
      	}
