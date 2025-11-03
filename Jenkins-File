@@ -1,109 +1,114 @@
-pipeline{
+pipeline {
     agent {
-      node {
-	label 'slave1'
+        node {
+            label 'slave1'
+        }
     }
-}
 
     tools {
-         maven 'MAVEN_HOME'
-         jdk 'JAVA_HOME'
-         git 'GIT_HOME'
+        maven 'MAVEN_HOME'
+        jdk 'JAVA_HOME'
     }
 
-    stages{
-        stage('pre-build step') {
+    stages {
+
+        stage('Pre-Build Step') {
             steps {
-		sh '''
-                echo "Pre Build Step for Webhook Trigges the pipeline on push event"
-		'''
-	    }
-	}
-        stage('Git Checkout'){
-            steps{
-                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'github access', url: 'https://github.com/sanketh2611/Project-2C.git']]])
-            }
-        }
-        stage('build'){
-            steps{
-               sh '''
-                mvn package
-                '''
-            }
-        }
-        stage ('Unit Test') {
-	        steps {
-                echo 'Running Unit Testing'
                 sh '''
-                mvn test
+                    echo "=== Pre Build Step ==="
                 '''
-             }
-         }
-        stage ('Update Local Repository') {
-             steps {
-                  sh '''
-                     mvn install
-					 rm -rf target/webapp.war
-                     mv target/*.war target/webapp.war
-                  '''
-             }
-        }
-        stage ('Static Code Analysis') {
-             environment {
-             scannerHome = tool 'SONAR_SCANNER'
-             }
-             steps {
-                echo 'Running Static Code Analysis'
-                 withSonarQubeEnv('SONAR_HOME') {
-                 sh '${scannerHome}/bin/sonar-scanner'
-                 }
             }
         }
-	stage('Jfrog Artifact Upload') {
-    steps {
-        rtUpload (
-            serverId: 'artifactory',
-            spec: '''{
-                "files": [
-                    {
-                        "pattern": "target/*.war",
-                        "target": "local-snapshot-repo2/simple-maven-project/1.0-SNAPSHOT/",
-                        "props": "type=war;env=prod"
-                    }
-                ]
-            }'''
-        )
-    }
-      }
-    stage('Docker Build and Run') {
-    steps {
-        script {
-            sh '''
-                echo "Current Directory:"
-                pwd
-                echo "Listing Files:"
-                ls -l
 
-                echo "Building Docker Image"
-                docker build -t webapp:latest .
+        stage('Git Checkout') {
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/master']],  // change if your branch is main
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        credentialsId: 'github access',
+                        url: 'https://github.com/sanketh2611/Project-2C.git'
+                    ]]
+                ])
+            }
+        }
 
-                echo "Stopping old container (if any)"
-                docker rm -f webapp || true
+        stage('Build') {
+            steps {
+                sh '''
+                    mvn clean package
+                    mkdir -p ${WORKSPACE}/Project/Docker
+                    cp -r ${WORKSPACE}/target/*.war ${WORKSPACE}/Project/Docker/webapp.war
+                '''
+            }
+        }
 
-                echo "Running new container"
-                docker run -d --name webapp -p 9091:8080 webapp:latest
-            '''
+        stage('Unit Test') {
+            steps {
+                echo '=== Running Unit Tests ==='
+                sh 'mvn test'
+            }
+        }
+
+        stage('Update Local Repository') {
+            steps {
+                echo '=== Updating Local m2 Repository ==='
+                sh 'mvn install'
+            }
+        }
+
+        stage('Static Code Analysis') {
+            environment {
+                scannerHome = tool 'SONAR_SCANNER'
+            }
+            steps {
+                echo '=== Running SonarQube Analysis ==='
+                withSonarQubeEnv('SONAR_HOME') {
+                    sh '${scannerHome}/bin/sonar-scanner'
+                }
+            }
+        }
+
+        stage('JFrog Artifact Upload') {
+            steps {
+                echo '=== Uploading Artifact to JFrog ==='
+                rtUpload(
+                    serverId: 'artifactory',
+                    spec: '''{
+                        "files": [
+                            {
+                                "pattern": "target/*.war",
+                                "target": "local-snapshot-repo2/simple-maven-project/1.0-SNAPSHOT/",
+                                "props": "type=war;env=prod"
+                            }
+                        ]
+                    }'''
+                )
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                echo '=== Building Docker Image ==='
+                sh 'docker build -t webapp:latest .'
+            }
+        }
+
+        stage('Docker Run') {
+            steps {
+                echo '=== Running Docker Container ==='
+                sh '''
+                    docker rm -f webapp || true
+                    docker run -d --name webapp -p 9091:8080 webapp:latest
+                '''
+            }
+        }
+
+        stage('Post-Build Step') {
+            steps {
+                sh 'echo "=== Pipeline Successful ==="'
+            }
         }
     }
-}
-
-         stage('post-build step') {
-            steps {
-	    	sh '''
-                echo "Successfull Pipeline for Docker Deployment"
-	     	'''
-	      }
-     	}
-    
-     }
 }
