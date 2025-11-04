@@ -47,14 +47,18 @@ pipeline {
         stage('Unit Test') {
             steps {
                 echo '=== Running Unit Tests ==='
-                sh 'mvn test'
+                sh '''
+                mvn test
+                '''
             }
         }
 
         stage('Update Local Repository') {
             steps {
                 echo '=== Updating Local m2 Repository ==='
-                sh 'mvn install'
+                sh '''
+                mvn install
+                '''
             }
         }
 
@@ -89,18 +93,25 @@ pipeline {
         }
 
         stage('Docker Build') {
-            steps {
-                echo '=== Building Docker Image ==='
-                sh 'docker build -t webapp:latest .'
-            }
+           steps {
+                script {
+                   sh "docker build -t sanketh26/webapp-app-tomcat:latest -f Project-2C/Dockerfile ."
+                }
+                } 
         }
-
+        stage ('Docker Push') {
+                 steps{
+                        sh ''' 
+			  docker push sanketh26/webapp-app-tomcat:latest
+	                '''
+                     }      
+               }
         stage('Docker Run') {
             steps {
                 echo '=== Running Docker Container ==='
                 sh '''
                     docker rm -f webapp || true
-                    docker run -d --name webapp -p 9091:8080 webapp:latest
+                    docker run -d --name webapp -p 9091:8080 webapp-app-tomcat:latest
                 '''
             }
         }
