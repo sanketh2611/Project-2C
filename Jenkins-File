@@ -24,7 +24,7 @@ pipeline {
             steps {
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/master']],  // change if your branch is main
+                    branches: [[name: '*/main']],
                     extensions: [],
                     userRemoteConfigs: [[
                         credentialsId: 'github access',
