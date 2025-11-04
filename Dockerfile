@@ -11,6 +11,8 @@ RUN apt -y install java-1.8.0*
 RUN java -version
 WORKDIR /opt/tomcat/webapps
 COPY target/webapp.war /opt/tomcat/webapps/
+EXPOSE 9091
+EXPOSE 8080
 EXPOSE 9090
 CMD ["/opt/tomcat/bin/catalina.sh", "run"]
 
